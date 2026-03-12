@@ -1,22 +1,21 @@
 const { exec } = require('child_process');
 
 const deploy = (repoName) => {
-    const imageName = repoName.toLowerCase();
-    const containerName = `${imageName}-container`;
+    // We'll name the image after your project
+    const imageName = "my-devops-app";
+    const containerName = "my-running-app";
 
-    console.log(`🚀 Real Deployment starting for: ${repoName}...`);
+    console.log(`🚀 Starting REAL Docker build for: ${repoName}...`);
 
-    const commands = [
-        // 1. Build the image and tag it
+    // These are the actual commands that will run in your PowerShell/Terminal
+   const commands = [
+        // 1. Build the image
         `docker build -t ${imageName} .`,
         
-        // 2. Stop the old container (using || true so it doesn't crash if container doesn't exist yet)
-        `docker stop ${containerName} || true`,
+        // 2. Stop and Remove the container (Windows friendly: ignore errors if it doesn't exist)
+        `docker rm -f ${containerName} 2>null || echo "Container not running, skipping..."`,
         
-        // 3. Remove the old container
-        `docker rm ${containerName} || true`,
-        
-        // 4. Run a new container on port 8080 (so it doesn't clash with your manager on 3000)
+        // 3. Run a new container
         `docker run -d --name ${containerName} -p 8080:3000 ${imageName}`
     ];
 
@@ -27,8 +26,8 @@ const deploy = (repoName) => {
             console.error(`❌ Docker Error: ${error.message}`);
             return;
         }
-        console.log(`📝 Docker Output:\n${stdout}`);
-        console.log(`✅ Container is live at http://localhost:8080`);
+        console.log(`📝 Docker Build Output:\n${stdout}`);
+        console.log(`✅ SUCCESS! App is live at http://localhost:8080`);
     });
 };
 
