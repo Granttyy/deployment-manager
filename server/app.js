@@ -10,7 +10,7 @@ app.use(express.json());
 
 // For testing purposes, you can also add a simple route to check if the server is running
 app.get('/', (req, res) => {
-    res.send('Deployment Manager is up and running!');
+    res.send('🚀 CI/CD SUCCESS: Version 2.0 is Live!');
 });
 
 // Route all /webhook requests to our dedicated router
