@@ -1,32 +1,47 @@
 const { exec } = require('child_process');
 const config = require('../config');
+const persistence = require('../utils/persistence');
+const { sendNotification } = require('../utils/notifier');
 
-/**
- * Builds and redeploys a Docker container for the given repository.
- *
- * @param {string} repoName - The GitHub repository name being deployed
- * @param {function} [callback] - Optional callback; receives `true` on success, `false` on failure
- */
-const deploy = (repoName, callback) => {
-    const { imageName, containerName, portMapping } = config.docker;
+// Backward-compatible signature:
+// - deploy(repoName, port, callback, customPath)
+// - deploy(repoName, callback)  // uses next available port and current directory
+const deploy = (repoName, portOrCallback, callbackOrPath, maybePath) => {
+    const port = typeof portOrCallback === 'number' ? portOrCallback : persistence.getNextPort();
+    const callback = typeof portOrCallback === 'function' ? portOrCallback : callbackOrPath;
+    const customPath = typeof portOrCallback === 'function'
+        ? (typeof callbackOrPath === 'string' ? callbackOrPath : '.')
+        : (typeof maybePath === 'string' ? maybePath : '.');
 
+    const containerPort = 3000;
     const commands = [
-        `docker build -t ${imageName} .`,
-        `docker stop ${containerName} || true`,
-        `docker rm ${containerName} || true`,
-        `docker run -d --name ${containerName} -p ${portMapping} ${imageName}`,
-        `docker image prune -f`,
+        `cd "${customPath}"`,
+        `docker build -t ${repoName} .`,
+        `docker stop ${repoName} 2>nul || ver >nul`,
+        `docker rm ${repoName} 2>nul || ver >nul`,
+        `docker run -d --name ${repoName} -e PORT=${containerPort} -p ${port}:${containerPort} ${repoName}`,
     ];
 
     exec(commands.join(' && '), (error, stdout, stderr) => {
         if (error) {
-            console.error(`❌ Deployment failed for "${repoName}": ${error.message}`);
-            callback?.(false);
-            return;
+            console.error('--- DOCKER ERROR LOG ---');
+            console.error(stderr);
+            console.error('------------------------');
         }
 
-        console.log(`✅ Successfully redeployed "${repoName}".`);
-        callback?.(true);
+        const success = !error;
+
+        persistence.saveEvent({
+            timestamp: new Date().toLocaleString(),
+            repo: repoName,
+            port,
+            status: success ? '✅ Success' : '❌ Failed',
+            error: error?.message ?? null,
+        });
+
+        sendNotification(repoName, success ? '✅ Success' : '❌ Failed', error?.message ?? null);
+
+        callback?.(success);
     });
 };
 

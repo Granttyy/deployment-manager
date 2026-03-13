@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudDeploy Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- Brand & Theme Variables --- */
+        :root {
+            --bg-body: #09090b;
+            --bg-card: #18181b;
+            --border-color: #27272a;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            
+            /* Custom Brand Kit: Violet */
+            --brand-main: #8b5cf6;
+            --brand-hover: #7c3aed;
+            --brand-glow: rgba(139, 92, 246, 0.2);
+            
+            /* HCI Status Colors */
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --error: #ef4444;
+            --error-bg: rgba(239, 68, 68, 0.1);
+        }
+
+        /* --- Global Reset & Typography --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* --- Main Container --- */
+        .container {
+            background-color: var(--bg-card);
+            width: 100%;
+            max-width: 480px;
+            padding: 40px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px inset rgba(255, 255, 255, 0.05);
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        /* --- Inputs --- */
+        input[type="text"], textarea {
+            width: 100%;
+            background-color: #09090b;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: var(--brand-main);
+            box-shadow: 0 0 0 3px var(--brand-glow);
+        }
+
+        /* --- Button --- */
+        button {
+            width: 100%;
+            background-color: var(--brand-main);
+            color: #fff;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--brand-hover);
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: #3f3f46;
+            color: #71717a;
+            cursor: not-allowed;
+        }
+
+        /* --- Status Area (HCI states) --- */
+        #statusArea {
+            margin-top: 24px;
+            padding: 16px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #statusArea.hidden, #resultArea.hidden, #tunnelPasswordArea.hidden {
+            display: none;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        /* Loading State */
+        .status-loading { background-color: transparent; border: 1px solid var(--border-color); }
+        .status-loading #statusText { color: var(--text-muted); }
+        
+        /* Error State */
+        .status-error { background-color: var(--error-bg); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .status-error #statusText { color: var(--error); font-weight: 500; }
+        
+        /* Success State */
+        .status-success { background-color: var(--success-bg); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .status-success #statusText { color: var(--success); font-weight: 500; }
+
+        /* --- Spinner Animation --- */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--text-muted);
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        /* --- Result Area --- */
+        #resultArea {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            animation: fadeIn 0.4s ease;
+        }
+
+        #resultArea p { margin-bottom: 8px; }
+
+        #liveLink {
+            display: inline-block;
+            color: var(--brand-main);
+            text-decoration: none;
+            font-weight: 500;
+            margin-bottom: 16px;
+            word-break: break-all;
+            transition: color 0.2s;
+        }
+
+        #liveLink:hover {
+            color: var(--brand-hover);
+            text-decoration: underline;
+        }
+
+        code {
+            background-color: #09090b;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 13px;
+            color: var(--text-main);
+            display: inline-block;
+        }
+
+        /* --- Animations --- */
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Instant Deployment</h1>
+        <p>Paste your GitHub URL to generate a test link.</p>
+        
+        <input type="text" id="repoUrl" placeholder="https://github.com/user/repo">
+        <textarea id="envContent" placeholder="PORT=3000&#10;DB_URL=shared_db_link..."></textarea>
+        
+        <button onclick="startDeploy()" id="deployBtn">Launch Website</button>
+
+        <div id="statusArea" class="hidden status-loading">
+            <div class="spinner" id="loadingSpinner"></div>
+            <p id="statusText" style="margin: 0;">Building Docker Image...</p>
+        </div>
+
+        <div id="resultArea" class="hidden">
+            <p>✅ Your site is live at:</p>
+            <a href="#" id="liveLink" target="_blank">Generating...</a>
+            
+            <div id="tunnelPasswordArea" class="hidden">
+                <p>Tunnel password (localtunnel):</p>
+                <code id="tunnelPassword">Loading...</code>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const uiDeployBtn = document.getElementById('deployBtn');
+        const uiStatusArea = document.getElementById('statusArea');
+        const uiStatusText = document.getElementById('statusText');
+        const uiSpinner = document.getElementById('loadingSpinner');
+        const uiResultArea = document.getElementById('resultArea');
+        const uiTunnelArea = document.getElementById('tunnelPasswordArea');
+
+        // HCI Functions for your external script.js to call
+
+        function uiSetLoading(message = "Building Docker Image...") {
+            uiDeployBtn.disabled = true;
+            uiDeployBtn.innerText = "Deploying...";
+            
+            uiResultArea.classList.add('hidden');
+            uiStatusArea.className = 'status-loading';
+            uiStatusArea.classList.remove('hidden');
+            
+            uiSpinner.style.display = 'block';
+            uiStatusText.innerText = message;
+        }
+
+        function uiSetSuccess(url, tunnelPass = null) {
+            uiDeployBtn.disabled = false;
+            uiDeployBtn.innerText = "Deploy Another App";
+            
+            uiStatusArea.className = 'status-success';
+            uiSpinner.style.display = 'none';
+            uiStatusText.innerText = "Deployment Successful!";
+            
+            uiResultArea.classList.remove('hidden');
+            const liveLink = document.getElementById('liveLink');
+            liveLink.href = url;
+            liveLink.innerText = url;
+
+            if (tunnelPass) {
+                uiTunnelArea.classList.remove('hidden');
+                document.getElementById('tunnelPassword').innerText = tunnelPass;
+            } else {
+                uiTunnelArea.classList.add('hidden');
+            }
+        }
+
+        function uiSetError(errorMessage = "Deployment failed. Please check logs.") {
+            uiDeployBtn.disabled = false;
+            uiDeployBtn.innerText = "Try Again";
+            
+            uiResultArea.classList.add('hidden');
+            
+            uiStatusArea.className = 'status-error';
+            uiStatusArea.classList.remove('hidden');
+            uiSpinner.style.display = 'none';
+            uiStatusText.innerText = errorMessage;
+        }
+    </script>
+
+    <script src="script.js"></script>
+</body>
+</html>
