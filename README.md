@@ -125,7 +125,12 @@ Create a `.env` file in the project root.
 
 ```
 PORT=3000
-WEBHOOK_SECRET=your_github_webhook_secret
+IMAGE_NAME=my-devops-app
+CONTAINER_NAME=my-running-app
+HOST_PORT=8080
+TARGET_BRANCH=refs/heads/main
+WEBHOOK_SECRET=MySuperSecret123 //change this in production
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/
 ```
 
 ---
