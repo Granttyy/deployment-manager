@@ -1,26 +1,24 @@
 #!/bin/bash
 
-# --- Configuration ---
+# 1. Configuration
 SMEE_URL="https://smee.io/deployment-manager"
-REPO_NAME="deployment-manager-test"
+WEBHOOK_SECRET="MySuperSecret123"
 
-echo "------------------------------------------------"
-echo "📡 Sending Fake Push Event to Smee.io..."
-echo "🔗 Target: $SMEE_URL"
-echo "------------------------------------------------"
+# 2. The Data (No spaces between keys/values for max consistency)
+PAYLOAD='{"ref":"refs/heads/main","repository":{"name":"deployment-manager-test"}}'
 
-# This sends the POST request mimicking GitHub's structure
+# 3. Calculate Signature
+# We use printf to ensure NO trailing newline is added to the string before hashing
+SIGNATURE=$(printf '%s' "$PAYLOAD" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print $NF}')
+
+echo "📡 Sending to $SMEE_URL..."
+echo "🔑 Signature: $SIGNATURE"
+
+# 4. Execute Curl
 curl -X POST "$SMEE_URL" \
   -H "Content-Type: application/json" \
   -H "X-GitHub-Event: push" \
-  -d "{
-    \"ref\": \"refs/heads/main\",
-    \"repository\": {
-      \"name\": \"$REPO_NAME\"
-    },
-    \"pusher\": {
-      \"name\": \"LocalDevUser\"
-    }
-  }"
+  -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
+  -d "$PAYLOAD"
 
-echo -e "\n\n✅ Webhook sent! Switch to your Node.js terminal to see the Docker logs."
+echo -e "\n✅ Done."

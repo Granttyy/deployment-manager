@@ -1,33 +1,32 @@
 const { exec } = require('child_process');
+const config = require('../config');
 
-const deploy = (repoName) => {
-    // We'll name the image after your project
-    const imageName = "my-devops-app";
-    const containerName = "my-running-app";
+/**
+ * Builds and redeploys a Docker container for the given repository.
+ *
+ * @param {string} repoName - The GitHub repository name being deployed
+ * @param {function} [callback] - Optional callback; receives `true` on success, `false` on failure
+ */
+const deploy = (repoName, callback) => {
+    const { imageName, containerName, portMapping } = config.docker;
 
-    console.log(`🚀 Starting REAL Docker build for: ${repoName}...`);
-
-    // These are the actual commands that will run in your PowerShell/Terminal
-   const commands = [
-        // 1. Build the image
+    const commands = [
         `docker build -t ${imageName} .`,
-        
-        // 2. Stop and Remove the container (Windows friendly: ignore errors if it doesn't exist)
-        `docker rm -f ${containerName} 2>null || echo "Container not running, skipping..."`,
-        
-        // 3. Run a new container
-        `docker run -d --name ${containerName} -p 8080:3000 ${imageName}`
+        `docker stop ${containerName} || true`,
+        `docker rm ${containerName} || true`,
+        `docker run -d --name ${containerName} -p ${portMapping} ${imageName}`,
+        `docker image prune -f`,
     ];
 
-    const fullCommand = commands.join(' && ');
-
-    exec(fullCommand, (error, stdout, stderr) => {
+    exec(commands.join(' && '), (error, stdout, stderr) => {
         if (error) {
-            console.error(`❌ Docker Error: ${error.message}`);
+            console.error(`❌ Deployment failed for "${repoName}": ${error.message}`);
+            callback?.(false);
             return;
         }
-        console.log(`📝 Docker Build Output:\n${stdout}`);
-        console.log(`✅ SUCCESS! App is live at http://localhost:8080`);
+
+        console.log(`✅ Successfully redeployed "${repoName}".`);
+        callback?.(true);
     });
 };
 

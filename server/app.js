@@ -1,22 +1,32 @@
 const express = require('express');
+const config = require('./config');
 const webhookRoutes = require('./routes/webhook');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-// This is crucial! GitHub sends payloads as JSON. 
-// This middleware allows Express to read the req.body
-app.use(express.json());
+// THIS IS THE FIX: It saves the exact bytes GitHub sent
+app.use(express.json({
+    verify: (req, res, buf) => {
+        req.rawBody = buf;
+    }
+}));
 
-// For testing purposes, you can also add a simple route to check if the server is running
-app.get('/', (req, res) => {
-    res.send('🚀 CI/CD SUCCESS: Version 2.0 is Live!');
+app.locals.deploymentStatus = {
+    lastDeploy: 'Never',
+    status: 'Idle',
+    repo: 'N/A'
+};
+
+app.get('/status', (req, res) => {
+    res.json({
+        manager: "Online",
+        uptime: `${Math.floor(process.uptime())}s`,
+        lastEvent: app.locals.deploymentStatus
+    });
 });
 
-// Route all /webhook requests to our dedicated router
 app.use('/webhook', webhookRoutes);
 
-app.listen(PORT, () => {
-    console.log(`🚀 Deployment Manager running on port ${PORT}`);
+app.listen(config.port, () => {
+    console.log(`🚀 Manager live on http://localhost:${config.port}`);
 });
-
