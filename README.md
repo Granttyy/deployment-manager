@@ -105,7 +105,7 @@ Enable **WSL2 backend for Docker Desktop**.
 ## 1 Clone the Repository
 
 ```
-git clone https://github.com/yourusername/clouddeploy.git
+git clone https://github.com/Granttyy/deployment-manager
 cd deployment-manager
 ```
 
